@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { m } from "framer-motion";
 import { useParams } from "react-router-dom";
 
+import { FaHeart, FaRegHeart, FaStar } from "react-icons/fa";
+
 import { Poster, Loader, Error, Section } from "@/common";
 import { Casts, Videos, Genre } from "./components";
 
 import { useGetShowQuery } from "@/services/TMDB";
+import { useWatchlist } from "@/context/watchlistContext";
 import { useMotion } from "@/hooks/useMotion";
 import { mainHeading, maxWidth, paragraph } from "@/styles";
 import { cn } from "@/utils/helper";
@@ -14,6 +17,7 @@ const Detail = () => {
   const { category, id } = useParams();
   const [show, setShow] = useState<Boolean>(false);
   const { fadeDown, staggerContainer } = useMotion();
+  const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
 
   const {
     data: movie,
@@ -54,6 +58,8 @@ const Detail = () => {
     genres,
     videos,
     credits,
+    vote_average: rating,
+    vote_count: voteCount,
   } = movie;
 
   const backgroundStyle = {
@@ -81,6 +87,22 @@ const Detail = () => {
             >
               {title || name}
             </m.h2>
+
+            {rating > 0 && (
+              <m.div
+                variants={fadeDown}
+                className="flex items-center gap-4"
+              >
+                <div className="flex items-center gap-2 bg-[#1a1a1a] px-4 py-2 rounded-lg">
+                  <FaStar className="text-yellow-400 text-lg" />
+                  <span className="text-white font-bold text-lg">{rating.toFixed(1)}</span>
+                  <span className="text-gray-400 text-sm">/10</span>
+                </div>
+                <span className="text-gray-400 text-sm">
+                  {voteCount?.toLocaleString()} votes
+                </span>
+              </m.div>
+            )}
 
             <m.ul
               variants={fadeDown}
@@ -110,6 +132,44 @@ const Detail = () => {
             </m.p>
 
             <Casts casts={credits?.cast || []} />
+
+            <m.button
+              variants={fadeDown}
+              type="button"
+              onClick={() => {
+                const movieData = {
+                  id: String(id),
+                  poster_path: posterPath,
+                  original_title: title || "",
+                  name: name || "",
+                  overview,
+                  backdrop_path: movie.backdrop_path || "",
+                };
+                if (isInWatchlist(String(id))) {
+                  removeFromWatchlist(String(id));
+                } else {
+                  addToWatchlist(movieData, String(category));
+                }
+              }}
+              className={cn(
+                "flex items-center gap-2 px-6 py-3 rounded-full font-medium transition-all duration-300 hover:-translate-y-1 w-fit",
+                isInWatchlist(String(id))
+                  ? "bg-[#ff0000] text-white"
+                  : "bg-white text-gray-900 hover:bg-gray-100"
+              )}
+            >
+              {isInWatchlist(String(id)) ? (
+                <>
+                  <FaHeart className="text-lg" />
+                  <span>In Watchlist</span>
+                </>
+              ) : (
+                <>
+                  <FaRegHeart className="text-lg" />
+                  <span>Add to Watchlist</span>
+                </>
+              )}
+            </m.button>
           </m.div>
         </div>
       </section>
